@@ -15,6 +15,7 @@ p. To change the path where you have installed Smarty look in the config.php fil
 p. The php script that accepts the source code sumbmissions(submit.php) has to write them to a file within the 'files' subdir under the 'judge' dir. So you'd need to give the apache server's username and group ownership of this directory (yeah 777 you'd say, but it's too dangerous). For Ubuntu/Debian based installations, it is `chown www-data:www-data files`. If you've better ideas about doing this, please tell me.
 
 h2. The backend
+
 p. You need to specify the mysql username, password in the backend/main.c file. 
 
 p. Also look into the main.c file to change the location of the chroot_jail and also where the submitted files and executables can be found.
