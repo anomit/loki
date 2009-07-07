@@ -6,7 +6,17 @@ char *server = "localhost";
 char *user = "root";
 char *password = "mysql";
 char *database = "judge";
-char *execfilepath_prefix = "/home/anomit/code/php/judge/backend";
+
+/*Obviously, path to the chroot jail*/
+char *chroot_jail_path = "/var/chroot/";
+
+/*path relative to the chroot jail where the submitted files are stored
+ * The field 'source' in compile_table has entries of the format 'files/filename.c'
+ */
+char *source_file_path = "home/judge/";
+
+/*path relative to the chroot jail where the executables are stored*/
+char *execfilepath_prefix = "home/judge/exec/";
 
 
 int main()
@@ -18,7 +28,7 @@ int main()
         exit(1);
     }
 
-    //while(1)
+        //while(1)
     //{
         check();
         exec();

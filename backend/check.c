@@ -37,13 +37,13 @@ void check()
             strcpy(tokenid, row[3]);
 
             /*TODO: put paths in a conf file*/
-            char fullpath[strlen("../")+strlen(source)+1];
+            char fullpath[strlen(source_file_path)+strlen(source)+1];
             memset(fullpath, '\0', sizeof(fullpath));
-            sprintf(fullpath,"../%s",source);
+            sprintf(fullpath,"%s%s", source_file_path, source);
 
-            char execfile[strlen("exec/exec")+strlen(tokenid)+1];
+            char execfile[strlen(execfilepath_prefix)+strlen("exec")+strlen(tokenid)+1];
             memset(execfile, '\0', sizeof(execfile));
-            sprintf(execfile,"exec/exec%s",tokenid);
+            sprintf(execfile,"%sexec%s",execfilepath_prefix, tokenid);
 
             if( !( pid = fork() ) )
             {
@@ -54,8 +54,13 @@ void check()
                 rl.rlim_max = 5;
                 
                 setrlimit(RLIMIT_CPU, &rl);
+                chroot(chroot_jail_path);
+                chdir("/");
 
-                execl("/usr/bin/gcc", "gcc", "-Wall", "-std=c99", fullpath, "-o",execfile, NULL);
+                if(mkdir(execfilepath_prefix, 0755) == EEXIST)
+                    printf("Directory exec already exists\n");
+
+                execl("/usr/bin/gcc", "gcc", "-Wall", "-std=c99", fullpath, "-o",execfile, "-lm", NULL);
            }
 
             else if (pid)
@@ -80,7 +85,7 @@ void check()
                         char insert[256];
                         memset(insert, '\0', sizeof(insert));
                        
-                        sprintf(insert, "INSERT INTO exec_table VALUES (%d, %d, %s, '%s')",problemid, userid, tokenid, execfile);
+                        sprintf(insert, "INSERT INTO exec_table VALUES (%d, %d, %s, 'exec%s')",problemid, userid, tokenid, tokenid);
 
                         if(mysql_query(conn, insert))
                            printf("Error inserting into exec_table\n%s",mysql_error(conn));;
