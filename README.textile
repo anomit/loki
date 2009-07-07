@@ -1,0 +1,55 @@
+h1. Introduction
+
+p. As it might be already clear from the small description, I'm trying to create a full fledged online judge. On a personal level, I'm doing it to get a better idea about programming in the linux environment. 
+
+h1. Getting Started 
+
+h2. The web interface
+
+p. Dump the whole 'judge' directory in your apache document root directory. You'll also need the Smarty templating system installed. I've included the only template file used so far now, index.tpl with the code. I'm selfish. I hope someone will take up the work on the template and beautify it so that I don't have to bother with the design :)
+
+p. Also create a mysql database named judge and import the sql provided.
+
+p. To change the path where you have installed Smarty look in the config.php file. 
+
+p. The php script that accepts the source code sumbmissions(submit.php) has to write them to a file within the 'files' subdir under the 'judge' dir. So you'd need to give the apache server's username and group ownership of this directory (yeah 777 you'd say, but it's too dangerous). For Ubuntu/Debian based installations, it is `chown www-data:www-data files`. If you've better ideas about doing this, please tell me.
+
+h2. The backend
+p. You need to specify the mysql username, password in the backend/main.c file. 
+
+p. Also look into the main.c file to change the location of the chroot_jail and also where the submitted files and executables can be found.
+
+
+h2. Installing
+
+p. All these done, go to the backend dir and type in
+
+make judge
+
+to get the executable file 'judge'. Now run it as root.
+
+
+
+
+h1. TODOs and Issues
+
+p. Right now this is offers a very basic level of functionality and a lot of things need to be added. I have TODO-ed them within the source code but still I'll list a few things that deserve immediate attention:
+
+
+*.  Make a whitelist(or blacklist?) of system calls that'll be intercepted by ptrace() in exec.c
+
+*. This currently compiles and executes only C code. Make pluggable modules for source codes submitted in different languages maybe?
+
+*. Improve the web interface that drives the system. Right now it offers basically nothing.
+
+*. Make a conf file parser to make the system more customizable. No one wants to hack the code to get it running.
+
+*. Right now the backend is asynchronous, to use a fancy term. Running it in an infinite loop doesn't make any sense. I'm sure it'd crash the system when it doesn't have anything to do like fetch something from the database and process. But a perfectly synchronous backend can't be a solution as well. At least I don't know how responding to each code submission would have an effect on the system (another fancy term: scaling). A middle ground needs to be adopted, like some kinda messaging system between the php script and the backend where the backend swings into action after applying a smart algorithm to the pending requests. Suggestions are more than welcome regarding this part.
+
+*. Redirect the STDIN and STDOUT to the problem input file and an output file in the forked child (exec.c)
+
+*. Work on the design of the web interface as well as adding a lot of other actions like checking scores for submitted code and history of code submissions, both on an individual as well as public scale.
+
+*. Most importantly: gradually the code will need to be changed to have the system running in a chroot jail. 
+
+
