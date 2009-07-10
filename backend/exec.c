@@ -39,6 +39,8 @@ void exec()
             sprintf(execfilename_fully_qualified, "%s%s", execfilepath_prefix, execfilename);
 
             int pid;
+            int insyscall = 0;
+            struct user_regs_struct uregs;
 
             struct tms tms_start, tms_end;
 
@@ -58,40 +60,59 @@ void exec()
                 /*a restriction on just the CPU time, TODO:need to add more like stack size*/                
                 setrlimit(RLIMIT_CPU, &rl);
 
-                //add ptrace here
+                ptrace(PTRACE_TRACEME, 0, NULL, NULL);
                 execl(execfilename_fully_qualified, execfilename, NULL);
             }
 
             else if ( pid )
             {
                 int status;
-                wait(&status);
-                times(&tms_end);
+                ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
 
-                if ( WIFEXITED(status) )
+                while(1)
                 {
-                    if ( WEXITSTATUS(status) == 0 )
+                    wait(&status);
+                    if ( WIFEXITED(status) )
+                        break;
+                    
+                    /*entry to syscall*/
+                    if (!insyscall)
                     {
-                        /*This uses the clock ticks returned by times() to calculate the "user CPU time"*/
-                        clock_t real = tms_end.tms_cutime - tms_start.tms_utime;
-                        float running_time = real / (double)sysconf(_SC_CLK_TCK);
-
-                        /*The following uses getrusage() to get the "user CPU time" of the child process.
-                         * Uncomment it and comment out the code using times() to see if there is any difference
+                        insyscall = 1;
+                        /*Get the values stored in registers for the child process
+                         * We need the value in EAX to identify the system call being attempted
                          */
-
-                        /*struct rusage ru;
-                        getrusage(RUSAGE_CHILDREN, &ru);
-
-                        struct timeval tv = ru.ru_utime;
-
-                        float running_time = (float)tv.tv_sec+(float)(tv.tv_usec/1000000.0);*/
-                        
-                        /*TODO:Put running time in DB*/
-                        
-                        detect_update_score(conn, userid, problemid, tokenid, running_time);    
+                        ptrace(PTRACE_GETREGS, pid, NULL, &uregs);
                     }
-                }
+                    /*exit from syscall*/
+                    else
+                        insyscall = 0;
+
+                    ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
+                } 
+
+                times(&tms_end);
+                if ( WEXITSTATUS(status) == 0 )
+                {
+                    /*This uses the clock ticks returned by times() to calculate the "user CPU time"*/
+                    clock_t real = tms_end.tms_cutime - tms_start.tms_utime;
+                    float running_time = real / (double)sysconf(_SC_CLK_TCK);
+
+                    /*The following uses getrusage() to get the "user CPU time" of the child process.
+                     * Uncomment it and comment out the code using times() to see if there is any difference
+                     */
+
+                    /*struct rusage ru;
+                    getrusage(RUSAGE_CHILDREN, &ru);
+
+                    struct timeval tv = ru.ru_utime;
+
+                    float running_time = (float)tv.tv_sec+(float)(tv.tv_usec/1000000.0);*/
+                    
+                    
+                    detect_update_score(conn, userid, problemid, tokenid, running_time);    
+                 }
+
                 /*Delete entry of exec file from DB after it has been processed*/
                 char delete_query[256];
                 memset(delete_query, '\0', sizeof(delete_query));

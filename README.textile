@@ -6,11 +6,11 @@ h1. Getting Started
 
 h2. The web interface
 
-p. Dump the whole 'judge' directory in your apache document root directory. You'll also need the Smarty templating system installed. I've included the only template file used so far now, index.tpl with the code. I'm selfish. I hope someone will take up the work on the template and beautify it so that I don't have to bother with the design :)
+p. Dump the whole 'judge' directory in your apache document root directory. Keep in mind though that the document root direcotry should be within the chroot jail, otherwise the backend can't access the saved files. 
+
+p. You'll also need the Smarty templating system installed. To change the path where you have installed Smarty look in the config.php file. I've included the only template file used so far now, index.tpl with the code. I hope someone will take up the work on the template and beautify it so that I don't have to bother with the design :)
 
 p. Also create a mysql database named judge and import the sql provided.
-
-p. To change the path where you have installed Smarty look in the config.php file. 
 
 p. The php script that accepts the source code sumbmissions(submit.php) has to write them to a file within the 'files' subdir under the 'judge' dir. So you'd need to give the apache server's username and group ownership of this directory (yeah 777 you'd say, but it's too dangerous). For Ubuntu/Debian based installations, it is `chown www-data:www-data files`. If you've better ideas about doing this, please tell me.
 
@@ -37,7 +37,7 @@ h1. TODOs and Issues
 p. Right now this is offers a very basic level of functionality and a lot of things need to be added. I have TODO-ed them within the source code but still I'll list a few things that deserve immediate attention:
 
 
-*  Make a whitelist(or blacklist?) of system calls that'll be intercepted by ptrace() in exec.c
+*  Make a whitelist(or blacklist?) of system calls that'll be intercepted by ptrace() in exec.c (*Work in progress. Suggestions are more than welcome*)
 
 * This currently compiles and executes only C code. Make pluggable modules for source codes submitted in different languages maybe?
 
@@ -51,7 +51,7 @@ p. Right now this is offers a very basic level of functionality and a lot of thi
 
 * Work on the design of the web interface as well as adding a lot of other actions like checking scores for submitted code and history of code submissions, both on an individual as well as public scale.
 
-* This now runs inside a chroot jail, specifically on a debootstrap installation on which I have tested.
+* [-Get the system to run in a chroot jail.-] [+This now runs inside a chroot jail, specifically on a debootstrap installation on which I have tested.+]
 
 h1. Dependencies
 
