@@ -21,4 +21,6 @@ extern char *database;
 extern char *chroot_jail_path;
 extern char *source_file_path;
 extern char *execfilepath_prefix;
+extern char *inputfilepath_prefix;
+extern char *outputfilepath_prefix;
 #endif

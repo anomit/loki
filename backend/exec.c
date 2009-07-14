@@ -47,80 +47,117 @@ void exec()
             chroot(chroot_jail_path);
             chdir("/");
 
-            times(&tms_start);
-            if ( !(pid = fork()) )
+            char judgeoutput_query[256];
+            memset(judgeoutput_query, '\0', sizeof(judgeoutput_query));
+
+            sprintf(judgeoutput_query, "SELECT input, output FROM solutions WHERE problemid=%d", problemid);
+            mysql_query(conn, judgeoutput_query);
+
+            MYSQL_RES *tempres = mysql_store_result(conn);
+
+            MYSQL_ROW temprow;
+
+            while ( ( temprow = mysql_fetch_row(tempres) ) )
             {
-                /*apply restrictions and all*/
-                struct rlimit rl;
-                getrlimit(RLIMIT_CPU, &rl);
+                char input[32], output[32];
+                memset(input, '\0', sizeof(input));
+                memset(output, '\0', sizeof(output));
+
+                strcpy(input, temprow[0]);
+                strcpy(output, temprow[1]);
+
+                char inputfile[strlen(inputfilepath_prefix)+strlen(input)+1];
+                char outputfile[strlen(outputfilepath_prefix)+strlen(output)+1];
+                memset(inputfile, '\0', sizeof(inputfile));
+                memset(outputfile, '\0', sizeof(outputfile));
+
+                sprintf(inputfile, "%s%s", inputfilepath_prefix, input);
+                sprintf(outputfile, "%s%s", outputfilepath_prefix, output);
                 
-                rl.rlim_cur = 3;
-                rl.rlim_max = 3;
-                
-                /*a restriction on just the CPU time, TODO:need to add more like stack size*/                
-                setrlimit(RLIMIT_CPU, &rl);
-
-                ptrace(PTRACE_TRACEME, 0, NULL, NULL);
-                execl(execfilename_fully_qualified, execfilename, NULL);
-            }
-
-            else if ( pid )
-            {
-                int status;
-                ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
-
-                while(1)
+                times(&tms_start);
+                if ( !(pid = fork()) )
                 {
-                    wait(&status);
-                    if ( WIFEXITED(status) )
-                        break;
+                    /*apply restrictions and all*/
+                    struct rlimit rl;
+                    getrlimit(RLIMIT_CPU, &rl);
                     
-                    /*entry to syscall*/
-                    if (!insyscall)
-                    {
-                        insyscall = 1;
-                        /*Get the values stored in registers for the child process
-                         * We need the value in EAX to identify the system call being attempted
-                         */
-                        ptrace(PTRACE_GETREGS, pid, NULL, &uregs);
-                    }
-                    /*exit from syscall*/
-                    else
-                        insyscall = 0;
+                    rl.rlim_cur = 3;
+                    rl.rlim_max = 3;
+                    
+                    /*a restriction on just the CPU time, TODO:need to add more like stack size*/                
+                    setrlimit(RLIMIT_CPU, &rl);
 
-                    ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
-                } 
+                    /*Redirect standard input to the input file*/
+                    freopen(inputfile, "r", stdin);
 
-                times(&tms_end);
-                if ( WEXITSTATUS(status) == 0 )
-                {
-                    /*This uses the clock ticks returned by times() to calculate the "user CPU time"*/
-                    clock_t real = tms_end.tms_cutime - tms_start.tms_utime;
-                    float running_time = real / (double)sysconf(_SC_CLK_TCK);
-
-                    /*The following uses getrusage() to get the "user CPU time" of the child process.
-                     * Uncomment it and comment out the code using times() to see if there is any difference
+                    /*This is supposed to be a temp file, gets overwritten every time
+                     * TODO: Diff with the outputfile expected
                      */
+                    freopen("/home/judge/outfile", "w", stdout);
 
-                    /*struct rusage ru;
-                    getrusage(RUSAGE_CHILDREN, &ru);
+                    ptrace(PTRACE_TRACEME, 0, NULL, NULL);
+                    execl(execfilename_fully_qualified, execfilename, NULL);
+                }
 
-                    struct timeval tv = ru.ru_utime;
+                else if ( pid )
+                {
+                    int status;
+                    ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
 
-                    float running_time = (float)tv.tv_sec+(float)(tv.tv_usec/1000000.0);*/
-                    
-                    
-                    detect_update_score(conn, userid, problemid, tokenid, running_time);    
-                 }
+                    while(1)
+                    {
+                        wait(&status);
+                        if ( WIFEXITED(status) )
+                            break;
+                        
+                        /*entry to syscall*/
+                        if (!insyscall)
+                        {
+                            insyscall = 1;
+                            /*Get the values stored in registers for the child process
+                             * We need the value in EAX to identify the system call being attempted
+                             */
+                            ptrace(PTRACE_GETREGS, pid, NULL, &uregs);
+                        }
+                        /*exit from syscall*/
+                        else
+                            insyscall = 0;
 
-                /*Delete entry of exec file from DB after it has been processed*/
-                char delete_query[256];
-                memset(delete_query, '\0', sizeof(delete_query));
+                        ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
+                    } 
 
-                sprintf(delete_query, "DELETE FROM exec_table WHERE userid=%d AND problemid=%d AND tokenid=%ld", userid, problemid, tokenid);
+                    times(&tms_end);
+                    if ( WEXITSTATUS(status) == 0 )
+                    {
+                        /*This uses the clock ticks returned by times() to calculate the "user CPU time"*/
+                        clock_t real = tms_end.tms_cutime - tms_start.tms_utime;
+                        float running_time = real / (double)sysconf(_SC_CLK_TCK);
 
-                mysql_query(conn, delete_query);
+                        /*The following uses getrusage() to get the "user CPU time" of the child process.
+                         * Uncomment it and comment out the code using times() to see if there is any difference
+                         */
+
+                        /*struct rusage ru;
+                        getrusage(RUSAGE_CHILDREN, &ru);
+
+                        struct timeval tv = ru.ru_utime;
+
+                        float running_time = (float)tv.tv_sec+(float)(tv.tv_usec/1000000.0);*/
+                        
+                        
+                        detect_update_score(conn, userid, problemid, tokenid, running_time);    
+                     }
+
+                    /*Delete entry of exec file from DB after it has been processed*/
+                    char delete_query[256];
+                    memset(delete_query, '\0', sizeof(delete_query));
+
+                    sprintf(delete_query, "DELETE FROM exec_table WHERE userid=%d AND problemid=%d AND tokenid=%ld", userid, problemid, tokenid);
+
+                    mysql_query(conn, delete_query);
+                }
             }
+            mysql_free_result(tempres);
         }
         mysql_free_result(res);
     }

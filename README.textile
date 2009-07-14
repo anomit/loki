@@ -47,7 +47,7 @@ p. Right now this is offers a very basic level of functionality and a lot of thi
 
 * Right now the backend is asynchronous, to use a fancy term. Running it in an infinite loop doesn't make any sense. I'm sure it'd crash the system when it doesn't have anything to do like fetch something from the database and process. But a perfectly synchronous backend can't be a solution as well. At least I don't know how responding to each code submission would have an effect on the system (another fancy term: scaling). A middle ground needs to be adopted, like some kinda messaging system between the php script and the backend where the backend swings into action after applying a smart algorithm to the pending requests. Suggestions are more than welcome regarding this part.
 
-* Redirect the STDIN and STDOUT to the problem input file and an output file in the forked child (exec.c)
+* [-Redirect the STDIN and STDOUT to the problem input file and an output file in the forked child (exec.c)-]
 
 * Work on the design of the web interface as well as adding a lot of other actions like checking scores for submitted code and history of code submissions, both on an individual as well as public scale.
 
@@ -58,9 +58,10 @@ h1. Dependencies
 p. If you are indeed trying this out, you are sure to run into some problems and miss some libraries that are not listed here. Please contact me so that I can update this list.
 
 * mysqlclient library
-* Smarty templating system
-* The usual LAMP stack
 
+* Smarty templating system
+
+* The usual LAMP stack
 
 
 

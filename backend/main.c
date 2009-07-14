@@ -18,6 +18,12 @@ char *source_file_path = "home/judge/";
 /*path relative to the chroot jail where the executables are stored*/
 char *execfilepath_prefix = "home/judge/exec/";
 
+/*path relative to the chroot jail where the input files are stored*/
+char *inputfilepath_prefix = "home/judge/input/";
+
+/*path relative to the chroot jail where the output files are stored*/
+char *outputfilepath_prefix = "home/judge/output/";
+
 
 int main()
 {
