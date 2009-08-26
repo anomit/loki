@@ -40,6 +40,7 @@ void exec()
 
             int pid;
             int insyscall = 0;
+            FILE *fp_pipe;
             struct user_regs_struct uregs;
 
             struct tms tms_start, tms_end;
@@ -49,6 +50,9 @@ void exec()
 
             char judgeoutput_query[256];
             memset(judgeoutput_query, '\0', sizeof(judgeoutput_query));
+
+            char diffcmd[256];
+            memset(diffcmd, '\0', sizeof(diffcmd));
 
             sprintf(judgeoutput_query, "SELECT input, output FROM solutions WHERE problemid=%d", problemid);
             mysql_query(conn, judgeoutput_query);
@@ -90,9 +94,7 @@ void exec()
                     /*Redirect standard input to the input file*/
                     freopen(inputfile, "r", stdin);
 
-                    /*This is supposed to be a temp file, gets overwritten every time
-                     * TODO: Diff with the outputfile expected
-                     */
+                    /*This is supposed to be a temp file, gets overwritten every time*/
                     freopen("/home/judge/outfile", "w", stdout);
 
                     ptrace(PTRACE_TRACEME, 0, NULL, NULL);
@@ -124,11 +126,17 @@ void exec()
                             insyscall = 0;
 
                         ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
-                    } 
+                    } //end of child
 
                     times(&tms_end);
-                    if ( WEXITSTATUS(status) == 0 )
+
+                    sprintf(diffcmd, "diff --ignore-space-change %s %s", "home/judge/outfile", outputfile);
+                    /*Open a pipe to the diff command*/
+                    fp_pipe = popen(diffcmd, "r");
+                        
+                    if ( WEXITSTATUS(status) == 0 && getc(fp_pipe) == EOF )
                     {
+                        pclose(fp_pipe);
                         /*This uses the clock ticks returned by times() to calculate the "user CPU time"*/
                         clock_t real = tms_end.tms_cutime - tms_start.tms_utime;
                         float running_time = real / (double)sysconf(_SC_CLK_TCK);
@@ -147,6 +155,8 @@ void exec()
                         
                         detect_update_score(conn, userid, problemid, tokenid, running_time);    
                      }
+                     else
+                        printf("Diff not matching\n");
 
                     /*Delete entry of exec file from DB after it has been processed*/
                     char delete_query[256];

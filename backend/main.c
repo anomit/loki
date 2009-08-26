@@ -39,6 +39,5 @@ int main()
         check();
         exec();
     //}
-    /*This is really redundant right now*/
     return 0;
 }
