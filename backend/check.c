@@ -23,7 +23,7 @@ void check()
     char *query = "SELECT problemid, userid, source, tokenid FROM compile_table WHERE checked=0";
     mysql_query(conn, query);
 
-    /*get all the rows at once so that the connection is freed up for later queries*/
+    /* get all the rows at once so that the connection is freed up for later queries */
     res = mysql_store_result(conn);
 
    
@@ -72,7 +72,8 @@ void check()
                 {
                     if ( WEXITSTATUS ( rv ) == 0 )
                     {
-                        /*Compilation was successful, zero exit code on return. Awesome!
+                        /* 
+                         * Compilation was successful, zero exit code on return. Awesome!
                          * update compile_table to let it know code has been compiled successfully
                          */
                         char update[256];

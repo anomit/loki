@@ -1,7 +1,7 @@
 #include "exec.h"
 #include "common.h"
 
-void detect_update_score(MYSQL *, int, int, long int, float);
+void detect_update_score(MYSQL *, int, int, long int, double);
 
 void exec()
 {
@@ -25,14 +25,18 @@ void exec()
 
     if(res)
     {
-        //printf("Whee!!\n");
         while( ( row = mysql_fetch_row(res) ) )
         {
             problemid = atoi(row[0]);
             userid = atoi(row[1]);
             tokenid = atol(row[2]);
             strcpy(execfilename, row[3]);
-            /*again we need to get this from a conf file, for now refer main.c to change execfilepath_prefix*/
+
+            /* 
+             * again we need to get this from a conf file
+             * for now refer main.c to change execfilepath_prefix
+             */
+
             char execfilename_fully_qualified[strlen(execfilepath_prefix)+strlen(execfilename)+1];
             memset(execfilename_fully_qualified, '\0', sizeof(execfilename_fully_qualified));
                 
@@ -116,7 +120,8 @@ void exec()
                         if (!insyscall)
                         {
                             insyscall = 1;
-                            /*Get the values stored in registers for the child process
+                            /* 
+                             * Get the values stored in registers for the child process
                              * We need the value in EAX to identify the system call being attempted
                              */
                             ptrace(PTRACE_GETREGS, pid, NULL, &uregs);
@@ -139,9 +144,10 @@ void exec()
                         pclose(fp_pipe);
                         /*This uses the clock ticks returned by times() to calculate the "user CPU time"*/
                         clock_t real = tms_end.tms_cutime - tms_start.tms_utime;
-                        float running_time = real / (double)sysconf(_SC_CLK_TCK);
+                        double running_time = real / (double)sysconf(_SC_CLK_TCK);
 
-                        /*The following uses getrusage() to get the "user CPU time" of the child process.
+                        /* 
+                         * The following uses getrusage() to get the "user CPU time" of the child process.
                          * Uncomment it and comment out the code using times() to see if there is any difference
                          */
 
@@ -151,7 +157,6 @@ void exec()
                         struct timeval tv = ru.ru_utime;
 
                         float running_time = (float)tv.tv_sec+(float)(tv.tv_usec/1000000.0);*/
-                        
                         
                         detect_update_score(conn, userid, problemid, tokenid, running_time);    
                      }
@@ -173,13 +178,13 @@ void exec()
     }
 }
 
-/*Detect if user has already submitted a successful soution. If so, check the previous running time against 
+/* 
+ * Detect if user has already submitted a successful soution. If so, check the previous running time against 
  * current running time. If prev > current, update to reflect the better time.
  * If no previous score, insert a new one.
- * TODO: Get the source file location to be passed for the success_source field to be filled in success_record
  */
 
-void detect_update_score(MYSQL *conn, int userid, int problemid, long int tokenid, float rt)
+void detect_update_score(MYSQL *conn, int userid, int problemid, long int tokenid, double rt)
 {
     char update_score[256];
     memset(update_score, '\0', sizeof(update_score));
@@ -198,19 +203,27 @@ void detect_update_score(MYSQL *conn, int userid, int problemid, long int tokeni
 
     if(res)
     {
+        /* Source for the successful program */
+        char source_file[256];
+        memset(source_file, '\0', sizeof(source_file));
+        sprintf(source_file, "source%d%ld", problemid, tokenid);
+
         if (mysql_num_rows(res))
         {
             row = mysql_fetch_row(res);
             float running_time = atof(row[0]);
             if (running_time>rt)
             {
-                sprintf(update_score, "UPDATE success_record SET time=%7.4f AND submitted_time=%ld WHERE userid=%d AND problemid=%d", rt, tokenid, userid, problemid);
+                sprintf(update_score, "UPDATE success_record SET `time`=%7.4lf AND `submitted_time`=%ld \
+                        AND `success_source`='%s' WHERE `userid`=%d AND `problemid`=%d", \
+                        rt, tokenid, source_file, userid, problemid);
                 mysql_query(conn, update_score);
             }
         }
         else
         {
-            sprintf(update_score, "INSERT INTO success_record (`userid`, `problemid`, `success_source`, `time`, `submitted_time`) VALUES (%d, %d, NULL, %7.4f, %ld)", userid, problemid, rt, tokenid);
+            sprintf(update_score, "INSERT INTO success_record (`userid`, `problemid`, `success_source`, `time`, \
+                `submitted_time`) VALUES (%d, %d, '%s', %7.4lf, %ld)", userid, problemid, source_file, rt, tokenid);
         
             if(mysql_query(conn, update_score))
                 printf("%s",mysql_error(conn));

@@ -7,21 +7,22 @@ char *user = "root";
 char *password = "mysql";
 char *database = "judge";
 
-/*Obviously, path to the chroot jail*/
+/* Obviously, path to the chroot jail */
 char *chroot_jail_path = "/var/chroot/";
 
-/*path relative to the chroot jail where the submitted files are stored
+/* 
+ * path relative to the chroot jail where the submitted files are stored
  * The field 'source' in compile_table has entries of the format 'files/filename.c'
  */
 char *source_file_path = "home/judge/";
 
-/*path relative to the chroot jail where the executables are stored*/
+/* path relative to the chroot jail where the executables are stored */
 char *execfilepath_prefix = "home/judge/exec/";
 
-/*path relative to the chroot jail where the input files are stored*/
+/* path relative to the chroot jail where the input files are stored */
 char *inputfilepath_prefix = "home/judge/input/";
 
-/*path relative to the chroot jail where the output files are stored*/
+/* path relative to the chroot jail where the output files are stored */
 char *outputfilepath_prefix = "home/judge/output/";
 
 
@@ -34,10 +35,7 @@ int main()
         exit(1);
     }
 
-        //while(1)
-    //{
-        check();
-        exec();
-    //}
+    check();
+    exec();
     return 0;
 }
