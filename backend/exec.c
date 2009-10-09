@@ -1,5 +1,4 @@
 #include "exec.h"
-#include "common.h"
 
 void detect_update_score(MYSQL *, int, int, long int, double);
 
@@ -206,8 +205,7 @@ void detect_update_score(MYSQL *conn, int userid, int problemid, long int tokeni
         /* Source for the successful program */
         char source_file[256];
         memset(source_file, '\0', sizeof(source_file));
-        sprintf(source_file, "source%d%ld", problemid, tokenid);
-
+        GEN_SOURCEFILE(source_file, problemid, tokenid);
         if (mysql_num_rows(res))
         {
             row = mysql_fetch_row(res);

@@ -1,5 +1,4 @@
 #include "check.h"
-#include "common.h"
 
 void check()
 {
@@ -39,11 +38,11 @@ void check()
             /*TODO: put paths in a conf file*/
             char fullpath[strlen(source_file_path)+strlen(source)+1];
             memset(fullpath, '\0', sizeof(fullpath));
-            sprintf(fullpath,"%s%s", source_file_path, source);
+            GEN_FULL_SOURCEPATH(fullpath, source_file_path, source);
 
             char execfile[strlen(execfilepath_prefix)+strlen("exec")+strlen(tokenid)+1];
             memset(execfile, '\0', sizeof(execfile));
-            sprintf(execfile,"%sexec%s",execfilepath_prefix, tokenid);
+            GEN_FULL_EXECPATH(execfile, execfilepath_prefix, tokenid);
 
             if( !( pid = fork() ) )
             {

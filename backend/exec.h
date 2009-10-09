@@ -9,6 +9,7 @@
 #include <sys/user.h>
 #include <sys/syscall.h>
 
+#include "common.h"
 void exec();
 
 #endif
